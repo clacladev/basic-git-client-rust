@@ -52,46 +52,38 @@ fn execute_cat_file_command(blob_hash: &str) -> anyhow::Result<()> {
     decoder.read_to_string(&mut blob_string)?;
 
     // Clean
-    let Some(blob_string) = blob_string.split_once('\0') else {
+    let Some((_, content_string)) = blob_string.split_once('\0') else {
         return Err(anyhow::anyhow!("Invalid blob data"));
     };
-    let blob_string = blob_string.1;
 
-    print!("{}", blob_string);
+    print!("{}", content_string);
     Ok(())
 }
 
 fn execute_hash_object_command(file_path: &str) -> anyhow::Result<()> {
     // Read
-    // let file_bytes = fs::read(file_path)?;
-    let file_content = fs::read_to_string(file_path)?;
+    let file_bytes = fs::read(file_path)?;
 
     // Create a blob content
-    let blob_prefix = format!("blob {}\0", file_content.len());
-    // println!("{blob_prefix}");
-    // let blob_content = [blob_prefix.as_bytes(), file_bytes.as_slice()].concat();
-    let blob_content = [blob_prefix, file_content].concat();
-    // println!("{blob_content}");
-    let blob_content = blob_content.as_bytes();
+    let blob_header = format!("blob {}\0", file_bytes.len());
+    let blob_content = [blob_header.as_bytes(), file_bytes.as_slice()].concat();
+
+    // Hash
+    let mut hasher = Sha1::new();
+    hasher.update(blob_content.as_slice());
+    let blob_hash = hasher.finalize();
+    let blob_hash = hex::encode(blob_hash);
 
     // Compress
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(&blob_content)?;
     let blob_data = encoder.finish()?;
 
-    // Hash
-    let mut hasher = Sha1::new();
-    hasher.update(blob_data.as_slice());
-    let blob_hash = hasher.finalize();
-    let blob_hash = hex::encode(blob_hash);
-
-    // println!("{blob_hash}");
-
     // Write
     let blob_dir = format!("{GIT_OBJECTS_DIR}/{}", &blob_hash[..2]);
     fs::create_dir(&blob_dir)?;
     let blob_path = format!("{blob_dir}/{}", &blob_hash[2..]);
-    fs::write(&blob_path, blob_content)?;
+    fs::write(&blob_path, blob_data)?;
 
     print!("{blob_hash}");
     Ok(())
