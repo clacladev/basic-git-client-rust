@@ -1,6 +1,12 @@
 use crate::constants::GIT_OBJECTS_DIR;
-use flate2::read::ZlibDecoder;
-use std::{fs, io::Read};
+use flate2::{read::ZlibDecoder, write::ZlibEncoder};
+use sha1::{Digest, Sha1};
+use std::{
+    fs,
+    io::{Read, Write},
+};
+
+pub const GIT_OBJECT_TYPE_BLOB: &str = "blob";
 
 pub enum GitObject {
     Blob(String),
@@ -8,10 +14,10 @@ pub enum GitObject {
 }
 
 impl GitObject {
-    fn from_raw(object_type: &str, content: &str) -> anyhow::Result<Self> {
+    pub fn new(object_type: &str, content_string: &str) -> anyhow::Result<Self> {
         match object_type {
-            "blob" => Ok(GitObject::Blob(content.to_string())),
-            // "tree" => Ok(GitObject::Tree(Tree::from_string(content)?)),
+            GIT_OBJECT_TYPE_BLOB => Ok(GitObject::Blob(content_string.to_string())),
+            // "tree" => Ok(GitObject::Tree(Tree::from_string(content_string)?)),
             _ => Err(anyhow::anyhow!("Invalid object type")),
         }
     }
@@ -30,7 +36,7 @@ impl GitObject {
             return Err(anyhow::anyhow!("Failed to read object length"));
         };
         // Create object
-        GitObject::from_raw(object_type, content_string)
+        GitObject::new(object_type, content_string)
     }
 
     fn from_path(path: &str) -> anyhow::Result<Self> {
@@ -65,5 +71,40 @@ impl GitObject {
         };
         // Create object
         GitObject::from_path(file_path)
+    }
+}
+
+impl GitObject {
+    fn to_raw(&self) -> anyhow::Result<(String, Vec<u8>)> {
+        let content = match self {
+            GitObject::Blob(content_string) => {
+                // Create a blob content
+                let header = format!("blob {}\0", content_string.len());
+                let content = [header.as_bytes(), content_string.as_bytes()].concat();
+                content
+            }
+        };
+
+        // Hash
+        let mut hasher = Sha1::new();
+        hasher.update(content.as_slice());
+        let hash = hex::encode(hasher.finalize());
+
+        // Compress
+        let mut encoder = ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+        encoder.write_all(&content)?;
+        let compressed_data = encoder.finish()?;
+        Ok((hash, compressed_data))
+    }
+
+    pub fn write_to_fs(&self) -> anyhow::Result<String> {
+        // Create object content
+        let (hash, compressed_data) = self.to_raw()?;
+        // Write
+        let dir_path = format!("{GIT_OBJECTS_DIR}/{}", &hash[..2]);
+        fs::create_dir(&dir_path)?;
+        let object_path = format!("{dir_path}/{}", &hash[2..]);
+        fs::write(&object_path, compressed_data)?;
+        Ok(hash)
     }
 }
