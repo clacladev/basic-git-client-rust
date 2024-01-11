@@ -39,7 +39,9 @@ fn execute_init_command() -> anyhow::Result<()> {
 }
 
 fn execute_cat_file_command(blob_hash: &str) -> anyhow::Result<()> {
-    let GitObject::Blob(content_string) = GitObject::from_hash(blob_hash)?;
+    let GitObject::Blob(content_string) = GitObject::from_hash(blob_hash)? else {
+        return Err(anyhow::anyhow!("Invalid blob hash"));
+    };
     print!("{}", content_string);
     Ok(())
 }
@@ -59,30 +61,9 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
     if tree_hash.len() < 6 {
         return Err(anyhow::anyhow!("Invalid tree hash"));
     }
-
-    // // Read
-    // let mut dir_iterator = fs::read_dir(format!("{GIT_OBJECTS_DIR}/{}/", &tree_hash[..2]))?;
-    // let Some(Ok(file_fs_dir_entry)) = dir_iterator.find(|entry| {
-    //     let Ok(entry) = entry.as_ref() else {
-    //         return false;
-    //     };
-    //     let Ok(entry_name) = entry.file_name().into_string() else {
-    //         return false;
-    //     };
-    //     entry_name.starts_with(&tree_hash[2..])
-    // }) else {
-    //     return Err(anyhow::anyhow!("Invalid tree hash"));
-    // };
-    // let file_path = file_fs_dir_entry.path();
-    // let Some(file_path) = file_path.to_str() else {
-    //     return Err(anyhow::anyhow!("Invalid tree hash"));
-    // };
-    // let file_data = fs::read(file_path)?;
-
-    // // Decompress
-    // let mut decoder = ZlibDecoder::new(file_data.as_slice());
-    // let mut blob_string = String::new();
-    // decoder.read_to_string(&mut blob_string)?;
-
+    let GitObject::Tree(content_string) = GitObject::from_hash(tree_hash)? else {
+        return Err(anyhow::anyhow!("Invalid tree hash"));
+    };
+    print!("{}", content_string);
     Ok(())
 }

@@ -7,32 +7,48 @@ use std::{
 };
 
 pub const GIT_OBJECT_TYPE_BLOB: &str = "blob";
+pub const GIT_OBJECT_TYPE_TREE: &str = "tree";
 
 pub enum GitObject {
     Blob(String),
-    // Tree(Tree),
+    Tree(String),
+}
+
+impl GitObject {
+    pub fn object_type(&self) -> String {
+        match self {
+            GitObject::Blob(_) => GIT_OBJECT_TYPE_BLOB.to_string(),
+            GitObject::Tree(_) => GIT_OBJECT_TYPE_TREE.to_string(),
+        }
+    }
 }
 
 impl GitObject {
     pub fn new(object_type: &str, content_string: &str) -> anyhow::Result<Self> {
+        let content_string = content_string.to_string();
         match object_type {
-            GIT_OBJECT_TYPE_BLOB => Ok(GitObject::Blob(content_string.to_string())),
-            // "tree" => Ok(GitObject::Tree(Tree::from_string(content_string)?)),
-            _ => Err(anyhow::anyhow!("Invalid object type")),
+            GIT_OBJECT_TYPE_BLOB => Ok(GitObject::Blob(content_string)),
+            GIT_OBJECT_TYPE_TREE => Ok(GitObject::Tree(content_string)),
+            _ => Err(anyhow::anyhow!(format!(
+                "Invalid object type {}",
+                object_type
+            ))),
         }
     }
 
     fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         // Decompress
         let mut decoder = ZlibDecoder::new(bytes);
-        let mut blob_string = String::new();
-        decoder.read_to_string(&mut blob_string)?;
+        let mut decompressed_bytes = vec![];
+        decoder.read_to_end(&mut decompressed_bytes)?;
+        let content_string = String::from_utf8_lossy(decompressed_bytes.as_slice()).to_string();
+
         // Get type
-        let Some((object_type, blob_string)) = blob_string.split_once(' ') else {
+        let Some((object_type, content_string)) = content_string.split_once(' ') else {
             return Err(anyhow::anyhow!("Failed to read object type"));
         };
         // Get content
-        let Some((_, content_string)) = blob_string.split_once('\0') else {
+        let Some((_, content_string)) = content_string.split_once('\0') else {
             return Err(anyhow::anyhow!("Failed to read object length"));
         };
         // Create object
@@ -40,9 +56,7 @@ impl GitObject {
     }
 
     fn from_path(path: &str) -> anyhow::Result<Self> {
-        // Read
         let file_bytes = fs::read(path)?;
-        // Create object
         GitObject::from_bytes(file_bytes.as_slice())
     }
 
@@ -76,14 +90,13 @@ impl GitObject {
 
 impl GitObject {
     fn to_raw(&self) -> anyhow::Result<(String, Vec<u8>)> {
-        let content = match self {
-            GitObject::Blob(content_string) => {
-                // Create a blob content
-                let header = format!("blob {}\0", content_string.len());
-                let content = [header.as_bytes(), content_string.as_bytes()].concat();
-                content
-            }
+        let object_type = self.object_type();
+        let content_string = match self {
+            GitObject::Blob(content_string) => content_string,
+            GitObject::Tree(content_string) => content_string,
         };
+        let header = format!("{object_type} {}\0", content_string.len());
+        let content = [header.as_bytes(), content_string.as_bytes()].concat();
 
         // Hash
         let mut hasher = Sha1::new();

@@ -25,6 +25,24 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "./your_git.sh cat-file -p 00687f0a48334e1d0047167d7bbc1f3b2f46a971",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=git-starter-rust",
+          "--package=git-starter-rust"
+        ],
+        "filter": {
+          "name": "git-starter-rust",
+          "kind": "bin"
+        }
+      },
+      "args": ["cat-file", "-p", "00687f0a48334e1d0047167d7bbc1f3b2f46a971"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "./your_git.sh ls-tree --name-only 37c2ed",
       "cargo": {
         "args": [
@@ -38,6 +56,28 @@
         }
       },
       "args": ["ls-tree", "--name-only", "37c2ed"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "./your_git.sh ls-tree --name-only 081558669d94a423026b0569113a87466d7190cf",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=git-starter-rust",
+          "--package=git-starter-rust"
+        ],
+        "filter": {
+          "name": "git-starter-rust",
+          "kind": "bin"
+        }
+      },
+      "args": [
+        "ls-tree",
+        "--name-only",
+        "081558669d94a423026b0569113a87466d7190cf"
+      ],
       "cwd": "${workspaceFolder}"
     }
   ]
