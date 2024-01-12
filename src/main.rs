@@ -73,5 +73,7 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
 }
 
 fn execute_write_tree_command() -> anyhow::Result<()> {
+    let paths = FsUtils::ls_files(".".to_string())?;
+    paths.iter().for_each(|path| println!("{}", path));
     Ok(())
 }

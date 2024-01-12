@@ -79,6 +79,24 @@
         "081558669d94a423026b0569113a87466d7190cf"
       ],
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "./your_git.sh write-tree",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=git-starter-rust",
+          "--package=git-starter-rust"
+        ],
+        "filter": {
+          "name": "git-starter-rust",
+          "kind": "bin"
+        }
+      },
+      "args": ["write-tree"],
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

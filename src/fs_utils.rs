@@ -1,6 +1,8 @@
-use super::constants::GIT_OBJECTS_DIR;
-use crate::git_object::GitObject;
-use std::fs;
+use crate::{
+    constants::{GIT_BASE_DIR, GIT_OBJECTS_DIR},
+    git_object::GitObject,
+};
+use std::{fs, vec};
 
 pub struct FsUtils {}
 
@@ -42,5 +44,42 @@ impl FsUtils {
         let object_path = format!("{dir_path}/{}", &hash[2..]);
         fs::write(&object_path, compressed_data)?;
         Ok(hash)
+    }
+
+    pub fn ls_files(path: String) -> anyhow::Result<Vec<String>> {
+        let mut files_paths: Vec<String> = vec![];
+        let mut dir_iterator = fs::read_dir(path)?;
+
+        while let Some(Ok(file_fs_dir_entry)) = dir_iterator.next() {
+            // Get path
+            let file_path = file_fs_dir_entry.path();
+            let Ok(file_path_string) = file_path.clone().into_os_string().into_string() else {
+                continue;
+            };
+
+            // If it's the git directory
+            if file_path_string.ends_with(GIT_BASE_DIR) {
+                continue;
+            }
+
+            // If it's a directory
+            if file_path.is_dir() {
+                // Get the files inside the directory
+                let mut sub_dir_files_paths = FsUtils::ls_files(file_path_string)?;
+                files_paths.append(&mut sub_dir_files_paths);
+                continue;
+            }
+
+            // Remove the leading "./"
+            let file_path_string = file_path_string[2..].to_string();
+
+            // Save the path
+            files_paths.push(file_path_string);
+        }
+
+        // Sort the paths
+        files_paths.sort();
+
+        Ok(files_paths)
     }
 }
