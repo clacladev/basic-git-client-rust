@@ -58,19 +58,6 @@ impl TreeLines {
             }
         }
 
-        Ok(TreeLines::new(lines.as_slice()))
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        todo!();
-        // let mut bytes: Vec<u8> = vec![];
-        // for line in self.0.clone() {
-        //     bytes.extend(line.mode.as_bytes());
-        //     bytes.push(b' ');
-        //     bytes.extend(line.path.as_bytes());
-        //     bytes.push(b'\0');
-        //     bytes.extend(hex::decode(line.hash).unwrap());
-        // }
-        // bytes
+        Ok(TreeLines::new(&lines))
     }
 }

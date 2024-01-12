@@ -4,6 +4,7 @@ pub enum CliCommand {
     CatFile,
     HashObject,
     ListTree,
+    WriteTree,
 }
 
 impl CliCommand {
@@ -13,6 +14,7 @@ impl CliCommand {
             "cat-file" => CliCommand::CatFile,
             "hash-object" => CliCommand::HashObject,
             "ls-tree" => CliCommand::ListTree,
+            "write-tree" => CliCommand::WriteTree,
             _ => panic!("Unrecognized command"),
         }
     }

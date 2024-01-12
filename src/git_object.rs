@@ -1,10 +1,6 @@
-use crate::constants::GIT_OBJECTS_DIR;
 use flate2::{read::ZlibDecoder, write::ZlibEncoder};
 use sha1::{Digest, Sha1};
-use std::{
-    fs,
-    io::{Read, Write},
-};
+use std::io::{Read, Write};
 
 use self::tree_line::TreeLines;
 
@@ -45,7 +41,7 @@ impl GitObject {
         }
     }
 
-    fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         // Decompress
         let mut decoder = ZlibDecoder::new(bytes);
         let mut decompressed_bytes_vec = vec![];
@@ -67,53 +63,21 @@ impl GitObject {
         // Create object
         Ok(GitObject::new(object_type.as_str(), decompressed_bytes)?)
     }
-
-    fn from_path(path: &str) -> anyhow::Result<Self> {
-        let file_bytes = fs::read(path)?;
-        GitObject::from_bytes(file_bytes.as_slice())
-    }
-
-    pub fn from_hash(hash: &str) -> anyhow::Result<Self> {
-        // Checks
-        if hash.len() < 6 {
-            return Err(anyhow::anyhow!("Invalid hash"));
-        }
-        // Find file starting with hash
-        let mut dir_iterator = fs::read_dir(format!("{GIT_OBJECTS_DIR}/{}/", &hash[..2]))?;
-        let Some(Ok(file_fs_dir_entry)) = dir_iterator.find(|entry| {
-            let Ok(entry) = entry.as_ref() else {
-                return false;
-            };
-            let Ok(entry_name) = entry.file_name().into_string() else {
-                return false;
-            };
-            entry_name.starts_with(&hash[2..])
-        }) else {
-            return Err(anyhow::anyhow!("Invalid hash"));
-        };
-        // Create path
-        let file_path: std::path::PathBuf = file_fs_dir_entry.path();
-        let Some(file_path) = file_path.to_str() else {
-            return Err(anyhow::anyhow!("Invalid hash"));
-        };
-        // Create object
-        GitObject::from_path(file_path)
-    }
 }
 
 impl GitObject {
-    fn to_raw(&self) -> anyhow::Result<(String, Vec<u8>)> {
+    pub fn to_raw(&self) -> anyhow::Result<(String, Vec<u8>)> {
         let object_type = self.object_type();
         let content_bytes = match self {
             GitObject::Blob(content_string) => content_string.as_bytes().to_vec(),
-            GitObject::Tree(lines) => lines.to_bytes(),
+            GitObject::Tree(_lines) => todo!(),
         };
         let header = format!("{object_type} {}\0", content_bytes.len());
-        let content = [header.as_bytes(), content_bytes.as_slice()].concat();
+        let content = [header.as_bytes(), &content_bytes].concat();
 
         // Hash
         let mut hasher = <Sha1 as Digest>::new();
-        hasher.update(content.as_slice());
+        hasher.update(&content);
         let hash = hex::encode(hasher.finalize());
 
         // Compress
@@ -121,16 +85,5 @@ impl GitObject {
         encoder.write_all(&content)?;
         let compressed_data = encoder.finish()?;
         Ok((hash, compressed_data))
-    }
-
-    pub fn write_to_fs(&self) -> anyhow::Result<String> {
-        // Create object content
-        let (hash, compressed_data) = self.to_raw()?;
-        // Write
-        let dir_path = format!("{GIT_OBJECTS_DIR}/{}", &hash[..2]);
-        fs::create_dir(&dir_path)?;
-        let object_path = format!("{dir_path}/{}", &hash[2..]);
-        fs::write(&object_path, compressed_data)?;
-        Ok(hash)
     }
 }
