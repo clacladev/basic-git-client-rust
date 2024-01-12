@@ -1,8 +1,7 @@
+use self::tree_line::TreeLines;
 use flate2::{read::ZlibDecoder, write::ZlibEncoder};
 use sha1::{Digest, Sha1};
 use std::io::{Read, Write};
-
-use self::tree_line::TreeLines;
 
 pub mod tree_line;
 
@@ -40,7 +39,9 @@ impl GitObject {
             ))),
         }
     }
+}
 
+impl GitObject {
     pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         // Decompress
         let mut decoder = ZlibDecoder::new(bytes);
@@ -63,9 +64,7 @@ impl GitObject {
         // Create object
         Ok(GitObject::new(object_type.as_str(), decompressed_bytes)?)
     }
-}
 
-impl GitObject {
     pub fn to_raw(&self) -> anyhow::Result<(String, Vec<u8>)> {
         let object_type = self.object_type();
         let content_bytes = match self {
