@@ -1,7 +1,8 @@
 use crate::{
     constants::{GIT_BASE_DIR, GIT_OBJECTS_DIR},
     git_object::{
-        tree_line::{TreeLine, TreeLines, TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
+        tree_line::{TreeLine, TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
+        tree_lines::TreeLines,
         GitObject,
     },
     hasher::create_hex_hash,
@@ -100,6 +101,9 @@ impl FsUtils {
                 hash.as_str(),
             ));
         }
+
+        // Sort the lines
+        lines.sort();
 
         Ok(TreeLines::new(&lines))
     }

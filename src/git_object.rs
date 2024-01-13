@@ -1,9 +1,10 @@
-use self::tree_line::TreeLines;
+use self::tree_lines::TreeLines;
 use crate::hasher::create_hex_hash;
 use flate2::{read::ZlibDecoder, write::ZlibEncoder};
 use std::io::{Read, Write};
 
 pub mod tree_line;
+pub mod tree_lines;
 
 pub const GIT_OBJECT_TYPE_BLOB: &str = "blob";
 pub const GIT_OBJECT_TYPE_TREE: &str = "tree";

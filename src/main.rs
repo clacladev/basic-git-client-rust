@@ -1,6 +1,6 @@
 use cli_commands::CliCommand;
 use constants::{GIT_BASE_DIR, GIT_HEAD_FILE, GIT_OBJECTS_DIR, GIT_REFS_DIR};
-use git_object::tree_line::TreeLines;
+use git_object::tree_lines::TreeLines;
 use git_object::{GitObject, GIT_OBJECT_TYPE_BLOB};
 use std::env;
 use std::fs;
@@ -75,6 +75,12 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
 
 fn execute_write_tree_command() -> anyhow::Result<()> {
     let tree_lines = FsUtils::make_tree_lines(".".to_string())?;
+
+    tree_lines
+        .0
+        .iter()
+        .for_each(|line| println!("{}", line.path.clone()));
+
     let tree_object = GitObject::Tree(tree_lines);
     let hash = FsUtils::write_to_fs(tree_object)?;
     println!("{hash}");
