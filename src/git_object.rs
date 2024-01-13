@@ -1,5 +1,5 @@
 use self::tree_lines::TreeLines;
-use crate::hasher::create_hex_hash;
+use crate::hasher::create_hash;
 use flate2::{read::ZlibDecoder, write::ZlibEncoder};
 use std::io::{Read, Write};
 
@@ -76,7 +76,7 @@ impl GitObject {
         let content = [header.as_bytes(), &content_bytes].concat();
 
         // Hash
-        let hash = create_hex_hash(&content);
+        let hash = hex::encode(create_hash(&content));
 
         // Compress
         let mut encoder = ZlibEncoder::new(Vec::new(), flate2::Compression::default());

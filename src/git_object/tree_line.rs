@@ -1,19 +1,19 @@
 pub const TREE_LINE_MODE_FILE: &str = "100644";
 pub const TREE_LINE_MODE_FOLDER: &str = "40000";
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone)]
 pub struct TreeLine {
     pub mode: String,
     pub path: String,
-    pub hash: String,
+    pub hash: Vec<u8>,
 }
 
 impl TreeLine {
-    pub fn new(mode: &str, path: &str, hash: &str) -> Self {
+    pub fn new(mode: &str, path: &str, hash: &[u8]) -> Self {
         Self {
             mode: mode.to_string(),
             path: path.to_string(),
-            hash: hash.to_string(),
+            hash: hash.to_vec(),
         }
     }
 }
@@ -26,17 +26,8 @@ impl TreeLine {
         bytes.push(b' ');
         bytes.extend_from_slice(self.path.as_bytes());
         bytes.push(b'\0');
-        bytes.extend_from_slice(hex::decode(self.hash.as_str()).unwrap().as_slice());
+        bytes.extend_from_slice(&self.hash);
 
         bytes
     }
 }
-
-// impl PartialOrd for TreeLine {
-//     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-//         if self.row == other.row {
-//             return Some(self.column.cmp(&other.column));
-//         }
-//         Some(self.row.cmp(&other.row))
-//     }
-// }

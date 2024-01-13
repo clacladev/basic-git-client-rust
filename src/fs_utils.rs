@@ -5,7 +5,7 @@ use crate::{
         tree_lines::TreeLines,
         GitObject,
     },
-    hasher::create_hex_hash,
+    hasher::create_hash,
 };
 use std::{fs, vec};
 
@@ -81,29 +81,28 @@ impl FsUtils {
             if entry_path.is_dir() {
                 // Make a tree lines object for the directory
                 let sub_dir_lines = Self::make_tree_lines(entry_path_string)?;
-                let sub_dir_bytes = sub_dir_lines.to_bytes();
-                let hash = create_hex_hash(&sub_dir_bytes);
+                let hash = create_hash(&sub_dir_lines.to_bytes());
                 lines.push(TreeLine::new(
                     TREE_LINE_MODE_FOLDER,
                     file_name_string.as_str(),
-                    hash.as_str(),
+                    &hash,
                 ));
                 continue;
             }
 
             // Make a line
             let file_bytes = fs::read(entry_path)?;
-            let hash = create_hex_hash(&file_bytes);
+            let hash = create_hash(&file_bytes);
 
             lines.push(TreeLine::new(
                 TREE_LINE_MODE_FILE,
                 file_name_string.as_str(),
-                hash.as_str(),
+                &hash,
             ));
         }
 
-        // Sort the lines
-        lines.sort();
+        // Sort the lines by path
+        lines.sort_by(|a, b| a.path.cmp(&b.path));
 
         Ok(TreeLines::new(&lines))
     }

@@ -34,9 +34,7 @@ impl TreeLines {
 
             let mode = String::from_utf8_lossy(mode).to_string();
             let path = String::from_utf8_lossy(path).to_string();
-            let hash = hex::encode(hash);
-
-            lines.push(TreeLine::new(mode.as_str(), path.as_str(), hash.as_str()));
+            lines.push(TreeLine::new(mode.as_str(), path.as_str(), &hash));
 
             if loop_remaining_bytes.len() == 0 {
                 break;
