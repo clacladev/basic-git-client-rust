@@ -1,6 +1,6 @@
 use self::tree_line::TreeLines;
+use crate::hasher::create_hex_hash;
 use flate2::{read::ZlibDecoder, write::ZlibEncoder};
-use sha1::{Digest, Sha1};
 use std::io::{Read, Write};
 
 pub mod tree_line;
@@ -42,7 +42,7 @@ impl GitObject {
 }
 
 impl GitObject {
-    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+    pub fn from_object_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         // Decompress
         let mut decoder = ZlibDecoder::new(bytes);
         let mut decompressed_bytes_vec = vec![];
@@ -69,20 +69,19 @@ impl GitObject {
         let object_type = self.object_type();
         let content_bytes = match self {
             GitObject::Blob(content_string) => content_string.as_bytes().to_vec(),
-            GitObject::Tree(_lines) => todo!(),
+            GitObject::Tree(tree_lines) => tree_lines.to_bytes(),
         };
         let header = format!("{object_type} {}\0", content_bytes.len());
         let content = [header.as_bytes(), &content_bytes].concat();
 
         // Hash
-        let mut hasher = <Sha1 as Digest>::new();
-        hasher.update(&content);
-        let hash = hex::encode(hasher.finalize());
+        let hash = create_hex_hash(&content);
 
         // Compress
         let mut encoder = ZlibEncoder::new(Vec::new(), flate2::Compression::default());
         encoder.write_all(&content)?;
         let compressed_data = encoder.finish()?;
+
         Ok((hash, compressed_data))
     }
 }

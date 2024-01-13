@@ -1,5 +1,8 @@
 const HASH_BYTES_LENGTH: usize = 20;
 
+pub const TREE_LINE_MODE_FILE: &str = "100644";
+pub const TREE_LINE_MODE_FOLDER: &str = "40000";
+
 #[derive(Debug, Clone)]
 pub struct TreeLine {
     pub mode: String,
@@ -14,6 +17,20 @@ impl TreeLine {
             path: path.to_string(),
             hash: hash.to_string(),
         }
+    }
+}
+
+impl TreeLine {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = vec![];
+
+        bytes.extend_from_slice(self.mode.as_bytes());
+        bytes.push(b' ');
+        bytes.extend_from_slice(self.path.as_bytes());
+        bytes.push(b'\0');
+        bytes.extend_from_slice(hex::decode(self.hash.as_str()).unwrap().as_slice());
+
+        bytes
     }
 }
 
@@ -59,5 +76,15 @@ impl TreeLines {
         }
 
         Ok(TreeLines::new(&lines))
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = vec![];
+
+        for line in &self.0 {
+            bytes.extend_from_slice(line.to_bytes().as_slice());
+        }
+
+        bytes
     }
 }
