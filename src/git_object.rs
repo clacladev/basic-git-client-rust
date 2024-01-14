@@ -1,5 +1,4 @@
 use self::tree_lines::TreeLines;
-use crate::{compressor::Compressor, hasher::create_hash};
 
 pub mod tree_line;
 pub mod tree_lines;
@@ -37,46 +36,5 @@ impl GitObject {
                 object_type
             ))),
         }
-    }
-}
-
-impl GitObject {
-    pub fn object_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        // Decompress
-        let decompressed_bytes_vec = Compressor::decompress(bytes)?;
-        let mut decompressed_bytes = decompressed_bytes_vec.as_slice();
-
-        // Parse
-        let Some(space_index) = decompressed_bytes.iter().position(|&b| b == b' ') else {
-            return Err(anyhow::anyhow!("Failed to read object type"));
-        };
-        let object_type = String::from_utf8_lossy(&decompressed_bytes[..space_index]).to_string();
-        decompressed_bytes = &decompressed_bytes[(space_index + 1)..];
-
-        let Some(null_index) = decompressed_bytes.iter().position(|&b| b == b'\0') else {
-            return Err(anyhow::anyhow!("Failed to read object length"));
-        };
-        decompressed_bytes = &decompressed_bytes[(null_index + 1)..];
-
-        // Create object
-        Ok(GitObject::new(object_type.as_str(), decompressed_bytes)?)
-    }
-
-    pub fn to_raw(&self) -> anyhow::Result<(String, Vec<u8>)> {
-        let object_type = self.object_type();
-        let content_bytes = match self {
-            GitObject::Blob(content_string) => content_string.as_bytes().to_vec(),
-            GitObject::Tree(tree_lines) => tree_lines.to_bytes(),
-        };
-        let header = format!("{object_type} {}\0", content_bytes.len());
-        let content = [header.as_bytes(), &content_bytes].concat();
-
-        // Hash
-        let hash = hex::encode(create_hash(&content));
-
-        // Compress
-        let compressed_data = Compressor::compress(&content)?;
-
-        Ok((hash, compressed_data))
     }
 }

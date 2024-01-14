@@ -1,5 +1,4 @@
 use cli_commands::CliCommand;
-use git_object::tree_lines::TreeLines;
 use git_object::{GitObject, GIT_OBJECT_TYPE_BLOB};
 use std::env;
 use std::fs;
@@ -29,15 +28,14 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn execute_init_command() -> anyhow::Result<()> {
-    FsUtils::init_git_dir()?;
+    FsUtils::init_dir()?;
     println!("Initialized git directory");
     Ok(())
 }
 
 fn execute_cat_file_command(blob_hash: &str) -> anyhow::Result<()> {
-    let bytes = FsUtils::read_bytes_for_hash(blob_hash)?;
-    let GitObject::Blob(content_string) = GitObject::object_from_bytes(&bytes)? else {
-        return Err(anyhow::anyhow!("Invalid blob hash"));
+    let GitObject::Blob(content_string) = FsUtils::read_object_with_hash(blob_hash)? else {
+        return Err(anyhow::anyhow!("Invalid hash"));
     };
     print!("{}", content_string);
     Ok(())
@@ -48,7 +46,7 @@ fn execute_hash_object_command(file_path: &str) -> anyhow::Result<()> {
     let file_bytes = fs::read(file_path)?;
     // Write as object
     let object = GitObject::new(GIT_OBJECT_TYPE_BLOB, &file_bytes)?;
-    let hash = FsUtils::write_to_fs(&object)?;
+    let hash = FsUtils::write_object(&object)?;
     // Print
     print!("{hash}");
     Ok(())
@@ -60,13 +58,11 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Invalid tree hash"));
     }
     // Create object
-    let bytes = FsUtils::read_bytes_for_hash(tree_hash)?;
-    let GitObject::Tree(lines) = GitObject::object_from_bytes(&bytes)? else {
-        return Err(anyhow::anyhow!("Invalid tree hash"));
+    let GitObject::Tree(lines) = FsUtils::read_object_with_hash(tree_hash)? else {
+        return Err(anyhow::anyhow!("Invalid hash"));
     };
-    let TreeLines(lines) = lines;
     // Print
-    lines.iter().for_each(|line| println!("{}", line.path));
+    lines.0.iter().for_each(|line| println!("{}", line.path));
     Ok(())
 }
 

@@ -49,12 +49,10 @@ impl TreeLines {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = vec![];
-
-        for line in &self.0 {
-            bytes.extend_from_slice(line.to_bytes().as_slice());
-        }
-
-        bytes
+        self.0
+            .iter()
+            .map(|line| line.to_bytes())
+            .flatten()
+            .collect()
     }
 }
