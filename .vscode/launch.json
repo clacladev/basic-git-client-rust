@@ -7,24 +7,6 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'git-starter-rust'",
-      "cargo": {
-        "args": [
-          "build",
-          "--bin=git-starter-rust",
-          "--package=git-starter-rust"
-        ],
-        "filter": {
-          "name": "git-starter-rust",
-          "kind": "bin"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
       "name": "./your_git.sh cat-file -p 00687f0a48334e1d0047167d7bbc1f3b2f46a971",
       "cargo": {
         "args": [

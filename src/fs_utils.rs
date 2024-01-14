@@ -1,9 +1,9 @@
 use crate::{
+    compressor::Compressor,
     constants::{GIT_BASE_DIR, GIT_OBJECTS_DIR},
     git_object::{
-        tree_line::{TreeLine, TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
-        tree_lines::TreeLines,
-        GitObject,
+        tree_line::{TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
+        GitObject, GIT_OBJECT_TYPE_BLOB, GIT_OBJECT_TYPE_TREE,
     },
     hasher::create_hash,
 };
@@ -54,56 +54,72 @@ impl FsUtils {
         Ok(hash)
     }
 
-    pub fn make_tree_lines(path: String) -> anyhow::Result<TreeLines> {
-        let mut lines: Vec<TreeLine> = vec![];
-        let dir_iterator = fs::read_dir(path)?;
+    pub fn write_tree(path: String) -> anyhow::Result<Vec<u8>> {
+        let mut tree_bytes: Vec<u8> = vec![];
 
-        for entry in dir_iterator {
-            let entry = entry?;
+        let entries = fs::read_dir(path)?;
+        let mut entries: Vec<_> = entries.filter_map(|e| e.ok()).collect();
+        entries.sort_by_key(|e| e.path());
 
+        for entry in entries {
             // Get path
             let entry_path = entry.path();
-            let Ok(entry_path_string) = entry_path.clone().into_os_string().into_string() else {
-                continue;
-            };
 
             // If it's the git directory, skip it
-            if entry_path_string.ends_with(GIT_BASE_DIR) {
+            if entry_path.ends_with(GIT_BASE_DIR) {
                 continue;
             }
-
             let file_name = entry.file_name();
             let Ok(file_name_string) = file_name.into_string() else {
                 continue;
             };
 
-            // If it's a directory
+            // Directory
             if entry_path.is_dir() {
-                // Make a tree lines object for the directory
-                let sub_dir_lines = Self::make_tree_lines(entry_path_string)?;
-                let hash = create_hash(&sub_dir_lines.to_bytes());
-                lines.push(TreeLine::new(
-                    TREE_LINE_MODE_FOLDER,
-                    file_name_string.as_str(),
-                    &hash,
-                ));
+                let Ok(entry_path_string) = entry_path.clone().into_os_string().into_string()
+                else {
+                    continue;
+                };
+                let header = format!("{} {}\0", TREE_LINE_MODE_FOLDER, file_name_string);
+                tree_bytes.extend(header.bytes());
+                let hash = Self::write_tree(entry_path_string)?;
+                tree_bytes.extend(&hash);
                 continue;
             }
 
-            // Make a line
+            // File
+            let header = format!("{} {}\0", TREE_LINE_MODE_FILE, file_name_string);
+            tree_bytes.extend(header.bytes());
             let file_bytes = fs::read(entry_path)?;
-            let hash = create_hash(&file_bytes);
-
-            lines.push(TreeLine::new(
-                TREE_LINE_MODE_FILE,
-                file_name_string.as_str(),
-                &hash,
-            ));
+            let hash = Self::write_object(GIT_OBJECT_TYPE_BLOB, &file_bytes)?;
+            tree_bytes.extend(&hash);
         }
 
-        // Sort the lines by path
-        lines.sort_by(|a, b| a.path.cmp(&b.path));
+        // Write tree
+        let hash = Self::write_object(GIT_OBJECT_TYPE_TREE, &tree_bytes)?;
 
-        Ok(TreeLines::new(&lines))
+        Ok(hash)
+    }
+
+    fn write_object(object_type: &str, content_bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let header = format!("{object_type} {}\0", content_bytes.len());
+        let object_bytes = [header.as_bytes(), &content_bytes].concat();
+
+        // Hash
+        let hash = create_hash(&object_bytes);
+        let hash_hex = hex::encode(&hash);
+
+        // Compress
+        let compressed_object_bytes = Compressor::compress(&object_bytes)?;
+
+        // Write
+        let dir_path = format!("{GIT_OBJECTS_DIR}/{}", &hash_hex[..2]);
+        if !fs::metadata(&dir_path).is_ok() {
+            fs::create_dir(&dir_path)?;
+        }
+        let object_path = format!("{dir_path}/{}", &hash_hex[2..]);
+        fs::write(&object_path, compressed_object_bytes)?;
+
+        Ok(hash)
     }
 }

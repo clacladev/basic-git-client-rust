@@ -43,10 +43,10 @@ impl GitObject {
 }
 
 impl GitObject {
-    pub fn from_object_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+    pub fn object_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         // Decompress
-        let mut decoder = ZlibDecoder::new(bytes);
         let mut decompressed_bytes_vec = vec![];
+        let mut decoder = ZlibDecoder::new(bytes);
         decoder.read_to_end(&mut decompressed_bytes_vec)?;
         let mut decompressed_bytes = decompressed_bytes_vec.as_slice();
 

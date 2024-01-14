@@ -8,6 +8,7 @@ use std::fs;
 use crate::fs_utils::FsUtils;
 
 mod cli_commands;
+mod compressor;
 mod constants;
 mod fs_utils;
 mod git_object;
@@ -39,7 +40,7 @@ fn execute_init_command() -> anyhow::Result<()> {
 
 fn execute_cat_file_command(blob_hash: &str) -> anyhow::Result<()> {
     let bytes = FsUtils::read_bytes_for_hash(blob_hash)?;
-    let GitObject::Blob(content_string) = GitObject::from_object_bytes(&bytes)? else {
+    let GitObject::Blob(content_string) = GitObject::object_from_bytes(&bytes)? else {
         return Err(anyhow::anyhow!("Invalid blob hash"));
     };
     print!("{}", content_string);
@@ -64,7 +65,7 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
     }
     // Create object
     let bytes = FsUtils::read_bytes_for_hash(tree_hash)?;
-    let GitObject::Tree(lines) = GitObject::from_object_bytes(&bytes)? else {
+    let GitObject::Tree(lines) = GitObject::object_from_bytes(&bytes)? else {
         return Err(anyhow::anyhow!("Invalid tree hash"));
     };
     let TreeLines(lines) = lines;
@@ -74,15 +75,7 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
 }
 
 fn execute_write_tree_command() -> anyhow::Result<()> {
-    let tree_lines = FsUtils::make_tree_lines(".".to_string())?;
-
-    tree_lines
-        .0
-        .iter()
-        .for_each(|line| println!("{}", line.path.clone()));
-
-    let tree_object = GitObject::Tree(tree_lines);
-    let hash = FsUtils::write_to_fs(tree_object)?;
-    println!("{hash}");
+    let hash = FsUtils::write_tree(".".to_string())?;
+    println!("{}", hex::encode(hash));
     Ok(())
 }
