@@ -6,8 +6,8 @@ const HASH_BYTES_LENGTH: usize = 20;
 pub struct TreeLines(pub Vec<TreeLine>);
 
 impl TreeLines {
-    pub fn new(lines: &[TreeLine]) -> Self {
-        Self(lines.to_vec())
+    pub fn new(lines: Vec<TreeLine>) -> Self {
+        Self(lines)
     }
 }
 
@@ -34,14 +34,14 @@ impl TreeLines {
 
             let mode = String::from_utf8_lossy(mode).to_string();
             let path = String::from_utf8_lossy(path).to_string();
-            lines.push(TreeLine::new(mode.as_str(), path.as_str(), &hash));
+            lines.push(TreeLine::new(mode, path, hash.to_vec()));
 
             if loop_remaining_bytes.len() == 0 {
                 break;
             }
         }
 
-        Ok(TreeLines::new(&lines))
+        Ok(TreeLines::new(lines))
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

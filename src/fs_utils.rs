@@ -1,6 +1,5 @@
 use crate::{
     compressor::Compressor,
-    constants::{GIT_BASE_DIR, GIT_HEAD_FILE, GIT_OBJECTS_DIR, GIT_REFS_DIR},
     git_object::{
         tree_line::{TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
         GitObject, GIT_OBJECT_TYPE_BLOB, GIT_OBJECT_TYPE_TREE,
@@ -8,6 +7,11 @@ use crate::{
     hasher::create_hash,
 };
 use std::{fs, vec};
+
+const GIT_BASE_DIR: &str = ".git";
+const GIT_OBJECTS_DIR: &str = ".git/objects";
+const GIT_REFS_DIR: &str = ".git/refs";
+const GIT_HEAD_FILE: &str = ".git/HEAD";
 
 pub struct FsUtils {}
 
@@ -48,7 +52,7 @@ impl FsUtils {
         Ok(file_bytes)
     }
 
-    pub fn write_to_fs(git_object: GitObject) -> anyhow::Result<String> {
+    pub fn write_to_fs(git_object: &GitObject) -> anyhow::Result<String> {
         // Create object content
         let (hash, compressed_data) = git_object.to_raw()?;
         // Write
@@ -62,7 +66,7 @@ impl FsUtils {
         Ok(hash)
     }
 
-    pub fn write_tree(path: String) -> anyhow::Result<Vec<u8>> {
+    pub fn write_tree(path: &str) -> anyhow::Result<Vec<u8>> {
         let mut tree_bytes: Vec<u8> = vec![];
 
         let entries = fs::read_dir(path)?;
@@ -90,7 +94,7 @@ impl FsUtils {
                 };
                 let header = format!("{} {}\0", TREE_LINE_MODE_FOLDER, file_name_string);
                 tree_bytes.extend(header.bytes());
-                let hash = Self::write_tree(entry_path_string)?;
+                let hash = Self::write_tree(entry_path_string.as_str())?;
                 tree_bytes.extend(&hash);
                 continue;
             }

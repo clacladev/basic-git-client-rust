@@ -8,7 +8,6 @@ use crate::fs_utils::FsUtils;
 
 mod cli_commands;
 mod compressor;
-mod constants;
 mod fs_utils;
 mod git_object;
 mod hasher;
@@ -23,6 +22,7 @@ fn main() -> anyhow::Result<()> {
         CliCommand::HashObject => execute_hash_object_command(&args[3])?,
         CliCommand::ListTree => execute_list_tree_command(&args[3])?,
         CliCommand::WriteTree => execute_write_tree_command()?,
+        CliCommand::CommitTree => execute_commit_tree_command(&args[2], &args[4], &args[6])?,
     }
 
     Ok(())
@@ -48,7 +48,7 @@ fn execute_hash_object_command(file_path: &str) -> anyhow::Result<()> {
     let file_bytes = fs::read(file_path)?;
     // Write as object
     let object = GitObject::new(GIT_OBJECT_TYPE_BLOB, &file_bytes)?;
-    let hash = FsUtils::write_to_fs(object)?;
+    let hash = FsUtils::write_to_fs(&object)?;
     // Print
     print!("{hash}");
     Ok(())
@@ -71,7 +71,15 @@ fn execute_list_tree_command(tree_hash: &str) -> anyhow::Result<()> {
 }
 
 fn execute_write_tree_command() -> anyhow::Result<()> {
-    let hash = FsUtils::write_tree(".".to_string())?;
+    let hash = FsUtils::write_tree(".")?;
     println!("{}", hex::encode(hash));
+    Ok(())
+}
+
+fn execute_commit_tree_command(
+    _tree_hash: &str,
+    _parent_commit_hash: &str,
+    _message: &str,
+) -> anyhow::Result<()> {
     Ok(())
 }

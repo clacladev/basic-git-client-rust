@@ -9,25 +9,19 @@ pub struct TreeLine {
 }
 
 impl TreeLine {
-    pub fn new(mode: &str, path: &str, hash: &[u8]) -> Self {
-        Self {
-            mode: mode.to_string(),
-            path: path.to_string(),
-            hash: hash.to_vec(),
-        }
+    pub fn new(mode: String, path: String, hash: Vec<u8>) -> Self {
+        Self { mode, path, hash }
     }
 }
 
 impl TreeLine {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = vec![];
-
         bytes.extend_from_slice(self.mode.as_bytes());
         bytes.push(b' ');
         bytes.extend_from_slice(self.path.as_bytes());
         bytes.push(b'\0');
         bytes.extend_from_slice(&self.hash);
-
         bytes
     }
 }

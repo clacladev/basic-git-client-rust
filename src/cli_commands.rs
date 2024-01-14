@@ -5,6 +5,7 @@ pub enum CliCommand {
     HashObject,
     ListTree,
     WriteTree,
+    CommitTree,
 }
 
 impl CliCommand {
@@ -15,6 +16,7 @@ impl CliCommand {
             "hash-object" => CliCommand::HashObject,
             "ls-tree" => CliCommand::ListTree,
             "write-tree" => CliCommand::WriteTree,
+            "commit-tree" => CliCommand::CommitTree,
             _ => panic!("Unrecognized command"),
         }
     }
