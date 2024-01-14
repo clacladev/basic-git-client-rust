@@ -1,4 +1,4 @@
-use super::tree_line::TreeLine;
+use super::tree_line::{Mode, TreeLine};
 
 const HASH_BYTES_LENGTH: usize = 20;
 
@@ -34,7 +34,11 @@ impl TreeLines {
 
             let mode = String::from_utf8_lossy(mode).to_string();
             let path = String::from_utf8_lossy(path).to_string();
-            lines.push(TreeLine::new(mode, path, hash.to_vec()));
+            lines.push(TreeLine::new(
+                Mode::from_string(mode.as_str())?,
+                path,
+                hash.to_vec(),
+            ));
 
             if loop_remaining_bytes.len() == 0 {
                 break;

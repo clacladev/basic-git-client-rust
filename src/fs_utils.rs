@@ -1,7 +1,7 @@
 use crate::{
     compressor::Compressor,
     git_object::{
-        tree_line::{TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
+        tree_line::{Mode, TreeLine},
         GitObject, GIT_OBJECT_TYPE_BLOB, GIT_OBJECT_TYPE_TREE,
     },
     hasher::create_hash,
@@ -92,19 +92,17 @@ impl FsUtils {
                 else {
                     continue;
                 };
-                let header = format!("{} {}\0", TREE_LINE_MODE_FOLDER, file_name_string);
-                tree_bytes.extend(header.bytes());
                 let hash = Self::write_tree(entry_path_string.as_str())?;
-                tree_bytes.extend(&hash);
+                let line = TreeLine::new(Mode::Folder, file_name_string, hash);
+                tree_bytes.extend(line.to_bytes());
                 continue;
             }
 
             // File
-            let header = format!("{} {}\0", TREE_LINE_MODE_FILE, file_name_string);
-            tree_bytes.extend(header.bytes());
             let file_bytes = fs::read(entry_path)?;
             let hash = Self::write_object(GIT_OBJECT_TYPE_BLOB, &file_bytes)?;
-            tree_bytes.extend(&hash);
+            let line = TreeLine::new(Mode::File, file_name_string, hash);
+            tree_bytes.extend(line.to_bytes());
         }
 
         // Write tree
