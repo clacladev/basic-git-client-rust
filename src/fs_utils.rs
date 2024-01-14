@@ -1,6 +1,6 @@
 use crate::{
     compressor::Compressor,
-    constants::{GIT_BASE_DIR, GIT_OBJECTS_DIR},
+    constants::{GIT_BASE_DIR, GIT_HEAD_FILE, GIT_OBJECTS_DIR, GIT_REFS_DIR},
     git_object::{
         tree_line::{TREE_LINE_MODE_FILE, TREE_LINE_MODE_FOLDER},
         GitObject, GIT_OBJECT_TYPE_BLOB, GIT_OBJECT_TYPE_TREE,
@@ -12,6 +12,14 @@ use std::{fs, vec};
 pub struct FsUtils {}
 
 impl FsUtils {
+    pub fn init_git_dir() -> anyhow::Result<()> {
+        fs::create_dir(GIT_BASE_DIR)?;
+        fs::create_dir(GIT_OBJECTS_DIR)?;
+        fs::create_dir(GIT_REFS_DIR)?;
+        fs::write(GIT_HEAD_FILE, "ref: refs/heads/master\n")?;
+        Ok(())
+    }
+
     pub fn read_bytes_for_hash(hash: &str) -> anyhow::Result<Vec<u8>> {
         // Checks
         if hash.len() < 6 {

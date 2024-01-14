@@ -1,7 +1,5 @@
 use self::tree_lines::TreeLines;
-use crate::hasher::create_hash;
-use flate2::{read::ZlibDecoder, write::ZlibEncoder};
-use std::io::{Read, Write};
+use crate::{compressor::Compressor, hasher::create_hash};
 
 pub mod tree_line;
 pub mod tree_lines;
@@ -45,9 +43,7 @@ impl GitObject {
 impl GitObject {
     pub fn object_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         // Decompress
-        let mut decompressed_bytes_vec = vec![];
-        let mut decoder = ZlibDecoder::new(bytes);
-        decoder.read_to_end(&mut decompressed_bytes_vec)?;
+        let decompressed_bytes_vec = Compressor::decompress(bytes)?;
         let mut decompressed_bytes = decompressed_bytes_vec.as_slice();
 
         // Parse
@@ -79,9 +75,7 @@ impl GitObject {
         let hash = hex::encode(create_hash(&content));
 
         // Compress
-        let mut encoder = ZlibEncoder::new(Vec::new(), flate2::Compression::default());
-        encoder.write_all(&content)?;
-        let compressed_data = encoder.finish()?;
+        let compressed_data = Compressor::compress(&content)?;
 
         Ok((hash, compressed_data))
     }

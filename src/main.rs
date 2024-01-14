@@ -1,5 +1,4 @@
 use cli_commands::CliCommand;
-use constants::{GIT_BASE_DIR, GIT_HEAD_FILE, GIT_OBJECTS_DIR, GIT_REFS_DIR};
 use git_object::tree_lines::TreeLines;
 use git_object::{GitObject, GIT_OBJECT_TYPE_BLOB};
 use std::env;
@@ -30,10 +29,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn execute_init_command() -> anyhow::Result<()> {
-    fs::create_dir(GIT_BASE_DIR)?;
-    fs::create_dir(GIT_OBJECTS_DIR)?;
-    fs::create_dir(GIT_REFS_DIR)?;
-    fs::write(GIT_HEAD_FILE, "ref: refs/heads/master\n")?;
+    FsUtils::init_git_dir()?;
     println!("Initialized git directory");
     Ok(())
 }
