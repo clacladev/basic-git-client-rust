@@ -12,6 +12,7 @@ const GIT_BASE_DIR: &str = ".git";
 const GIT_OBJECTS_DIR: &str = ".git/objects";
 const GIT_REFS_DIR: &str = ".git/refs";
 const GIT_HEAD_FILE: &str = ".git/HEAD";
+const GIT_REFS_HEADS_DIR: &str = ".git/refs/heads";
 
 pub struct FsUtils {}
 
@@ -126,19 +127,13 @@ impl FsUtils {
         Ok(hash)
     }
 
-    fn get_header(object_type: &str, content_bytes: &[u8]) -> String {
-        format!("{object_type} {}\0", content_bytes.len())
-    }
-
     pub fn write_object(object: &GitObject) -> anyhow::Result<String> {
         // Create object content
-
-        // let (hash, compressed_data) = object.to_raw()?;
-
         let object_type = object.object_type();
         let content_bytes = match object {
             GitObject::Blob(content_string) => content_string.as_bytes().to_vec(),
             GitObject::Tree(tree_lines) => tree_lines.to_bytes(),
+            GitObject::Commit(content_string) => content_string.as_bytes().to_vec(),
         };
         let header = Self::get_header(object_type.as_str(), &content_bytes);
         let content = [header.as_bytes(), &content_bytes].concat();
@@ -149,15 +144,35 @@ impl FsUtils {
         // Compress
         let compressed_data = Compressor::compress(&content)?;
 
-        // Write
+        // Write object
         let dir_path = format!("{GIT_OBJECTS_DIR}/{}", &hash[..2]);
         if !fs::metadata(dir_path.clone()).is_ok() {
             fs::create_dir(&dir_path)?;
         }
         let object_path = format!("{dir_path}/{}", &hash[2..]);
         fs::write(&object_path, compressed_data)?;
+
+        // Write ref
+        match object {
+            GitObject::Commit(_) => {
+                let dir_path = GIT_REFS_HEADS_DIR;
+                if !fs::metadata(dir_path).is_ok() {
+                    fs::create_dir_all(&dir_path)?;
+                }
+                let object_path = format!("{dir_path}/master");
+                fs::write(&object_path, &hash)?;
+            }
+            _ => {}
+        }
+
         // Return hash
         Ok(hash)
+    }
+}
+
+impl FsUtils {
+    fn get_header(object_type: &str, content_bytes: &[u8]) -> String {
+        format!("{object_type} {}\0", content_bytes.len())
     }
 
     fn write_raw_object(object_type: &str, object_content: &[u8]) -> anyhow::Result<Vec<u8>> {

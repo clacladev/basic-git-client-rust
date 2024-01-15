@@ -73,9 +73,12 @@ fn execute_write_tree_command() -> anyhow::Result<()> {
 }
 
 fn execute_commit_tree_command(
-    _tree_hash: &str,
-    _parent_commit_hash: &str,
-    _message: &str,
+    tree_hash: &str,
+    parent_commit_hash: &str,
+    message: &str,
 ) -> anyhow::Result<()> {
+    let commit_object = GitObject::new_commit(tree_hash, parent_commit_hash, message);
+    let hash = FsUtils::write_object(&commit_object)?;
+    println!("{hash}");
     Ok(())
 }
